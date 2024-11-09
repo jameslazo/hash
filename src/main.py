@@ -1,13 +1,14 @@
 from flask import Flask, flash, request, render_template_string, redirect, url_for
 import os
 from werkzeug.utils import secure_filename
+import hashlib
 
-UPLOAD_FOLDER = 'uploads'
+
 ALLOWED_EXTENSIONS = {'txt'}
+MAX_FILES = 5
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 100000
+app.config['MAX_CONTENT_LENGTH'] = 10000000
 app.secret_key = os.urandom(24)
 
 uploaded_files_data = []
@@ -16,6 +17,12 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def calculate_file_hash(file_stream, hash_algo='sha256'):
+    hash_func = hashlib.new(hash_algo)
+    for chunk in iter(lambda: file_stream.read(4096), b""):
+        hash_func.update(chunk)
+    file_stream.seek(0)
+    return hash_func.hexdigest()
 
 html_template = """
 <!DOCTYPE html>
@@ -47,10 +54,14 @@ html_template = """
         <table border="1">
             <tr>
                 <th>File Name</th>
+                <th>File Size</th>
+                <th>File Hash</th>
             </tr>
             {% for file in files %}
                 <tr>
                     <td>{{ file['filename'] }}</td>
+                    <td>{{ file['size'] }}</td>
+                    <td>{{ file['hash'] }}</td>
                 </tr>
             {% endfor %}
         </table>
@@ -60,7 +71,7 @@ html_template = """
 </html>
 """
 
-# Define the home page
+# Home page
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -72,10 +83,18 @@ def upload_file():
         
         for file in uploaded_files:
             if file and allowed_file(file.filename):
-                file.seek(0, 2) 
-                if file.tell() > 0:  
+                file.seek(0, os.SEEK_END)
+                file_size = file.tell()
+                file.seek(0)
+                file_hash = calculate_file_hash(file.stream)
+
+                if file_size > 0:  
                     filename = secure_filename(file.filename)
-                    file_data = {'filename': filename}
+                    file_data = {
+                        'filename': filename,
+                        'size': file_size,
+                        'hash': file_hash
+                        }
                     uploaded_files_data.append(file_data)
                 else:
                     flash(f"{file.filename} is empty and will not be analyzed.")
@@ -86,6 +105,7 @@ def upload_file():
     return render_template_string(html_template, files=uploaded_files_data)
 
 
+# Clear results
 @app.route('/clear', methods=['GET'])
 def clear_results():
     uploaded_files_data.clear()
