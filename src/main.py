@@ -8,7 +8,7 @@ ALLOWED_EXTENSIONS = {'txt'}
 MAX_FILES = 5
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 10000000
+app.config['MAX_CONTENT_LENGTH'] = 100000
 app.secret_key = os.urandom(24)
 
 uploaded_files_data = []
@@ -79,6 +79,10 @@ def upload_file():
         
         if not uploaded_files or all(file.filename == '' for file in uploaded_files):
             flash("No files selected.")
+            return render_template_string(html_template, files=uploaded_files_data)
+        
+        if len(uploaded_files) > MAX_FILES:
+            flash(f"Up to {MAX_FILES} files can be analyzed.")
             return render_template_string(html_template, files=uploaded_files_data)
         
         for file in uploaded_files:
