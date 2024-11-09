@@ -15,4 +15,5 @@ def test_home(client):
     assert b'</form>' in response.data
     assert b'</body>' in response.data
     assert b'</html>' in response.data
-    
+    post = client.post('/', data={'files': 'test.txt'})
+    assert post.status_code == 200
