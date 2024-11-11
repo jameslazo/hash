@@ -14,14 +14,14 @@ Interface
  - Results
     - Table
       - ~~File name~~
-      - Hash
-      - Grouping
+      - ~~Hash~~
+      - ~~Grouping~~
       - Dynamic updates
 
 Validations
- - File type
- - File size
+ - ~~File type~~
+ - ~~File size~~
  - Edge cases
-   - Empty files
+   - ~~Empty files~~
    - No file extensions
- - Security
+ - ~~Security~~
